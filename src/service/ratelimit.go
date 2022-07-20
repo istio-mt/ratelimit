@@ -72,7 +72,7 @@ func (this *service) reloadConfig(statsManager stats.Manager) {
 			continue
 		}
 
-		files = append(files, config.RateLimitConfigToLoad{Name: key, FileBytes: snapshot.Get(key), DiffType: config.NoneType})
+		files = append(files, config.RateLimitConfigToLoad{Name: key, FileBytes: snapshot.Get(key)})
 	}
 
 	newConfig := this.configLoader.Load(files, statsManager)
@@ -109,7 +109,7 @@ func (this *service) applyConfig(msg config.RateLimitMessage, statsManager stats
 	}()
 
 	// TODO: handle changing of pods and threshold
-	newConfig := this.configLoader.Load(msg.Diffs, statsManager)
+	newConfig := this.configLoader.LoadDiff(msg.Configs, statsManager)
 	this.stats.ConfigLoadSuccess.Inc()
 
 	this.configLock.Lock()

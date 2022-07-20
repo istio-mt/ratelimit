@@ -52,15 +52,45 @@ const (
 type RateLimitConfigToLoad struct {
 	Name      string
 	FileBytes string
-	DiffType  DiffType
+	Diff      *RateLimitDiff
 }
 
 // Message to apply diff configs to the  aggregate config.
 type RateLimitMessage struct {
-	NumPods uint32
+	NumPods             uint32
 	RedisPipelineLength uint32
-	InMemoryThreshold uint32
-	Diffs []RateLimitConfigToLoad
+	InMemoryThreshold   uint32
+	Configs             []RateLimitConfigToLoad
+}
+
+type RateLimitDiff struct {
+	Root YamlRoot
+	Type DiffType
+}
+
+type YamlReplaces struct {
+	Name string
+}
+
+type YamlRateLimit struct {
+	RequestsPerUnit uint32 `yaml:"requests_per_unit"`
+	Unit            string
+	Unlimited       bool `yaml:"unlimited"`
+	Name            string
+	Replaces        []YamlReplaces
+}
+
+type YamlDescriptor struct {
+	Key         string
+	Value       string
+	RateLimit   *YamlRateLimit `yaml:"rate_limit"`
+	Descriptors []YamlDescriptor
+	ShadowMode  bool `yaml:"shadow_mode"`
+}
+
+type YamlRoot struct {
+	Domain      string
+	Descriptors []YamlDescriptor
 }
 
 // Interface for loading a configuration from a list of YAML files.
@@ -71,4 +101,11 @@ type RateLimitConfigLoader interface {
 	// @return a new configuration.
 	// @throws RateLimitConfigError if the configuration could not be created.
 	Load(configs []RateLimitConfigToLoad, statsManager stats.Manager) RateLimitConfig
+
+	// Load configuration from a list of diffs.
+	// @param configs supplies a list of diffs.
+	// @param statsManager supplies the statsManager to initialize stats during runtime.
+	// @return a new configuration.
+	// @throws RateLimitConfigError if the configuration could not be created.
+	LoadDiff(configs []RateLimitConfigToLoad, statsManager stats.Manager) RateLimitConfig
 }

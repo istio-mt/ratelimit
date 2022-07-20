@@ -21,7 +21,7 @@ func loadFile(path string) []config.RateLimitConfigToLoad {
 	if err != nil {
 		panic(err)
 	}
-	return []config.RateLimitConfigToLoad{{Name: path, FileBytes: string(contents), DiffType: config.NoneType}}
+	return []config.RateLimitConfigToLoad{{Name: path, FileBytes: string(contents)}}
 }
 
 func TestBasicConfig(t *testing.T) {

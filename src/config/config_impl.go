@@ -13,31 +13,6 @@ import (
 	"github.com/envoyproxy/ratelimit/src/stats"
 )
 
-type YamlReplaces struct {
-	Name string
-}
-
-type YamlRateLimit struct {
-	RequestsPerUnit uint32 `yaml:"requests_per_unit"`
-	Unit            string
-	Unlimited       bool `yaml:"unlimited"`
-	Name            string
-	Replaces        []YamlReplaces
-}
-
-type YamlDescriptor struct {
-	Key         string
-	Value       string
-	RateLimit   *YamlRateLimit `yaml:"rate_limit"`
-	Descriptors []YamlDescriptor
-	ShadowMode  bool `yaml:"shadow_mode"`
-}
-
-type YamlRoot struct {
-	Domain      string
-	Descriptors []YamlDescriptor
-}
-
 type rateLimitDescriptor struct {
 	descriptors map[string]*rateLimitDescriptor
 	limit       *RateLimit
@@ -283,7 +258,29 @@ func (this *rateLimitConfigImpl) loadConfig(config RateLimitConfigToLoad) {
 		panic(newRateLimitConfigError(config, "config file cannot have empty domain"))
 	}
 	// Update rate limit configs
-	switch config.DiffType {
+	if _, present := this.domains[root.Domain]; present {
+		panic(newRateLimitConfigError(
+			config, fmt.Sprintf("duplicate domain '%s' in config file", root.Domain)))
+	}
+	logger.Debugf("loading domain: %s", root.Domain)
+	newDomain := &rateLimitDomain{rateLimitDescriptor{map[string]*rateLimitDescriptor{}, nil}}
+	newDomain.loadDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
+	this.domains[root.Domain] = newDomain
+}
+
+// Apply diff config into the global config.
+// @param config specifies the diff contents to load.
+func (this *rateLimitConfigImpl) applyDiff(config RateLimitConfigToLoad) {
+	if config.Diff == nil {
+		panic(newRateLimitConfigError(config, "empty diff root"))
+	}
+	
+	root := config.Diff.Root
+	if root.Domain == "" {
+		panic(newRateLimitConfigError(config, "config file cannot have empty domain"))
+	}
+	// Update rate limit configs
+	switch config.Diff.Type {
 	case AddType:
 		if existedDomain, present := this.domains[root.Domain]; present {
 			logger.Debugf("adding to existed domain: %s", root.Domain)
@@ -310,14 +307,7 @@ func (this *rateLimitConfigImpl) loadConfig(config RateLimitConfigToLoad) {
 			existedDomain.loadDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
 		}
 	default:
-		if _, present := this.domains[root.Domain]; present {
-			panic(newRateLimitConfigError(
-				config, fmt.Sprintf("duplicate domain '%s' in config file", root.Domain)))
-		}
-		logger.Debugf("loading domain: %s", root.Domain)
-		newDomain := &rateLimitDomain{rateLimitDescriptor{map[string]*rateLimitDescriptor{}, nil}}
-		newDomain.loadDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
-		this.domains[root.Domain] = newDomain
+		panic(newRateLimitConfigError(config, "invalid diff type"))
 	}
 }
 
@@ -419,12 +409,32 @@ func NewRateLimitConfigImpl(
 	return ret
 }
 
-type rateLimitConfigLoaderImpl struct{}
+type rateLimitConfigLoaderImpl struct {
+	config *rateLimitConfigImpl
+}
 
 func (this *rateLimitConfigLoaderImpl) Load(
 	configs []RateLimitConfigToLoad, statsManager stats.Manager) RateLimitConfig {
+	ret := &rateLimitConfigImpl{map[string]*rateLimitDomain{}, statsManager}
+	for _, config := range configs {
+		ret.loadConfig(config)
+	}
+	this.config = ret
+	return this.config
+}
 
-	return NewRateLimitConfigImpl(configs, statsManager)
+func (this *rateLimitConfigLoaderImpl) LoadDiff(
+	configs []RateLimitConfigToLoad, statsManager stats.Manager) RateLimitConfig {
+
+	if this.config == nil {
+		this.config = &rateLimitConfigImpl{map[string]*rateLimitDomain{}, statsManager}
+	}
+
+	for _, config := range configs {
+		this.config.applyDiff(config)
+	}
+
+	return this.config
 }
 
 // @return a new default config loader implementation.
