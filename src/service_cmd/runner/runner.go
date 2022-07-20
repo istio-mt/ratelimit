@@ -75,7 +75,7 @@ func createLimiter(srv server.Server, s settings.Settings, localCache *freecache
 	}
 }
 
-func (runner *Runner) Run() {
+func (runner *Runner) Run(msgCh <-chan config.RateLimitMessage) {
 	s := runner.settings
 	if s.TracingEnabled {
 		tp := trace.InitProductionTraceProvider(s.TracingExporterProtocol, s.TracingServiceName, s.TracingServiceNamespace, s.TracingServiceInstanceId)
@@ -124,6 +124,7 @@ func (runner *Runner) Run() {
 		s.RuntimeWatchRoot,
 		utils.NewTimeSourceImpl(),
 		s.GlobalShadowMode,
+		msgCh,
 	)
 
 	srv.AddDebugHttpEndpoint(

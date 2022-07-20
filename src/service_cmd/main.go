@@ -7,5 +7,5 @@ import (
 
 func main() {
 	runner := runner.NewRunner(settings.NewSettings())
-	runner.Run()
+	runner.Run(nil)
 }

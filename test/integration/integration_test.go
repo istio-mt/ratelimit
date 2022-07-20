@@ -662,7 +662,7 @@ func startTestRunner(t *testing.T, s settings.Settings) *runner.Runner {
 				t.Fatalf("Uncaught panic(): %v", r)
 			}
 		}()
-		runner.Run()
+		runner.Run(nil)
 	}()
 
 	// HACK: Wait for the server to come up. Make a hook that we can wait on.

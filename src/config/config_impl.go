@@ -186,6 +186,33 @@ func (this *rateLimitDescriptor) loadDescriptors(config RateLimitConfigToLoad, p
 	}
 }
 
+// Remove a set of config descriptors from the YAML file and check the input.
+// @param config supplies the config file that owns the descriptor.
+// @param parentKey supplies the fully resolved key name that owns this config level.
+// @param descriptors supplies the YAML descriptors to remove.
+// @param statsManager that owns the stats.Scope.
+func (this *rateLimitDescriptor) removeDescriptors(config RateLimitConfigToLoad, parentKey string, descriptors []yamlDescriptor, statsManager stats.Manager) {
+	for _, descriptorConfig := range descriptors {
+		if descriptorConfig.Key == "" {
+			panic(newRateLimitConfigError(config, "descriptor has empty key"))
+		}
+
+		// Value is optional, so the final key for the map is either the key only or key_value.
+		finalKey := descriptorConfig.Key
+		if descriptorConfig.Value != "" {
+			finalKey += "_" + descriptorConfig.Value
+		}
+
+		newParentKey := parentKey + finalKey
+		if _, present := this.descriptors[finalKey]; !present {
+			panic(newRateLimitConfigError(
+				config, fmt.Sprintf("remove non-existed descriptor composite key '%s'", newParentKey)))
+		}
+		
+		delete(this.descriptors, finalKey)
+	}
+}
+
 // Validate a YAML config file's keys.
 // @param config specifies the file contents to load.
 // @param any specifies the yaml file and a map.
@@ -255,16 +282,43 @@ func (this *rateLimitConfigImpl) loadConfig(config RateLimitConfigToLoad) {
 	if root.Domain == "" {
 		panic(newRateLimitConfigError(config, "config file cannot have empty domain"))
 	}
-
-	if _, present := this.domains[root.Domain]; present {
-		panic(newRateLimitConfigError(
-			config, fmt.Sprintf("duplicate domain '%s' in config file", root.Domain)))
+	// Update rate limit configs
+	switch config.DiffType {
+	case AddType:
+		if existedDomain, present := this.domains[root.Domain]; present {
+			logger.Debugf("adding to existed domain: %s", root.Domain)
+			existedDomain.loadDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
+		} else {
+			logger.Debugf("adding new domain: %s", root.Domain)
+			newDomain := &rateLimitDomain{rateLimitDescriptor{map[string]*rateLimitDescriptor{}, nil}}
+			newDomain.loadDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
+			this.domains[root.Domain] = newDomain
+		}
+	case RemoveType:
+		if existedDomain, present := this.domains[root.Domain]; !present {
+			panic(newRateLimitConfigError(
+				config, fmt.Sprintf("removing non-existed domain '%s' in config file", root.Domain)))
+		} else {
+			existedDomain.removeDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)	
+		} 
+	case ModifyType:
+		if existedDomain, present := this.domains[root.Domain]; !present {
+			panic(newRateLimitConfigError(
+				config, fmt.Sprintf("modifying non-existed domain '%s' in config file", root.Domain)))
+		} else {
+			existedDomain.removeDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
+			existedDomain.loadDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
+		} 
+	default:
+		if _, present := this.domains[root.Domain]; present {
+			panic(newRateLimitConfigError(
+				config, fmt.Sprintf("duplicate domain '%s' in config file", root.Domain)))
+		}
+		logger.Debugf("loading domain: %s", root.Domain)
+		newDomain := &rateLimitDomain{rateLimitDescriptor{map[string]*rateLimitDescriptor{}, nil}}
+		newDomain.loadDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
+		this.domains[root.Domain] = newDomain
 	}
-
-	logger.Debugf("loading domain: %s", root.Domain)
-	newDomain := &rateLimitDomain{rateLimitDescriptor{map[string]*rateLimitDescriptor{}, nil}}
-	newDomain.loadDescriptors(config, root.Domain+".", root.Descriptors, this.statsManager)
-	this.domains[root.Domain] = newDomain
 }
 
 func (this *rateLimitConfigImpl) Dump() string {

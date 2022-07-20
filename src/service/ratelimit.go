@@ -72,7 +72,7 @@ func (this *service) reloadConfig(statsManager stats.Manager) {
 			continue
 		}
 
-		files = append(files, config.RateLimitConfigToLoad{key, snapshot.Get(key)})
+		files = append(files, config.RateLimitConfigToLoad{Name: key, FileBytes: snapshot.Get(key), DiffType: config.NoneType})
 	}
 
 	newConfig := this.configLoader.Load(files, statsManager)
@@ -80,6 +80,41 @@ func (this *service) reloadConfig(statsManager stats.Manager) {
 
 	this.configLock.Lock()
 	this.config = newConfig
+	rlSettings := settings.NewSettings()
+	this.globalShadowMode = rlSettings.GlobalShadowMode
+
+	if rlSettings.RateLimitResponseHeadersEnabled {
+		this.customHeadersEnabled = true
+
+		this.customHeaderLimitHeader = rlSettings.HeaderRatelimitLimit
+
+		this.customHeaderRemainingHeader = rlSettings.HeaderRatelimitRemaining
+
+		this.customHeaderResetHeader = rlSettings.HeaderRatelimitReset
+	}
+	this.configLock.Unlock()
+}
+
+func (this *service) applyConfig(msg config.RateLimitMessage, statsManager stats.Manager) {
+	defer func() {
+		if e := recover(); e != nil {
+			configError, ok := e.(config.RateLimitConfigError)
+			if !ok {
+				panic(e)
+			}
+
+			this.stats.ConfigLoadError.Inc()
+			logger.Errorf("error applying new diff config: %s", configError.Error())
+		}
+	}()
+
+	// TODO: handle changing of pods and threshold
+	newConfig := this.configLoader.Load(msg.Diffs, statsManager)
+	this.stats.ConfigLoadSuccess.Inc()
+
+	this.configLock.Lock()
+	this.config = newConfig
+	// FIXME: is it necessary?
 	rlSettings := settings.NewSettings()
 	this.globalShadowMode = rlSettings.GlobalShadowMode
 
@@ -313,7 +348,7 @@ func (this *service) GetCurrentConfig() config.RateLimitConfig {
 }
 
 func NewService(runtime loader.IFace, cache limiter.RateLimitCache,
-	configLoader config.RateLimitConfigLoader, statsManager stats.Manager, runtimeWatchRoot bool, clock utils.TimeSource, shadowMode bool) RateLimitServiceServer {
+	configLoader config.RateLimitConfigLoader, statsManager stats.Manager, runtimeWatchRoot bool, clock utils.TimeSource, shadowMode bool, msgCh <-chan config.RateLimitMessage) RateLimitServiceServer {
 
 	newService := &service{
 		runtime:            runtime,
@@ -330,16 +365,28 @@ func NewService(runtime loader.IFace, cache limiter.RateLimitCache,
 
 	runtime.AddUpdateCallback(newService.runtimeUpdateEvent)
 
-	newService.reloadConfig(statsManager)
-	go func() {
-		// No exit right now.
-		for {
-			logger.Debugf("waiting for runtime update")
-			<-newService.runtimeUpdateEvent
-			logger.Debugf("got runtime update and reloading config")
-			newService.reloadConfig(statsManager)
-		}
-	}()
+	if msgCh == nil {
+		newService.reloadConfig(statsManager)
+		go func() {
+			// No exit right now.
+			for {
+				logger.Debugf("waiting for runtime update")
+				<-newService.runtimeUpdateEvent
+				logger.Debugf("got runtime update and reloading config")
+				newService.reloadConfig(statsManager)
+			}
+		}()
+	} else {
+		go func() {
+			// No exit right now.
+			for {
+				logger.Debugf("waiting for diff update")
+				msg := <-msgCh
+				logger.Debugf("got rate limit message and apply config")
+				newService.applyConfig(msg, statsManager)	
+			}
+		}()
+	}
 
 	return newService
 }

@@ -39,10 +39,28 @@ type RateLimitConfig interface {
 	GetLimit(ctx context.Context, domain string, descriptor *pb_struct.RateLimitDescriptor) *RateLimit
 }
 
+type DiffType string
+
+const (
+	NoneType   DiffType = ""
+	AddType    DiffType = "add"
+	RemoveType DiffType = "remove"
+	ModifyType DiffType = "modify"
+)
+
 // Information for a config file to load into the aggregate config.
 type RateLimitConfigToLoad struct {
 	Name      string
 	FileBytes string
+	DiffType  DiffType
+}
+
+// Message to apply diff configs to the  aggregate config.
+type RateLimitMessage struct {
+	NumPods uint32
+	RedisPipelineLength uint32
+	InMemoryThreshold uint32
+	Diffs []RateLimitConfigToLoad
 }
 
 // Interface for loading a configuration from a list of YAML files.
