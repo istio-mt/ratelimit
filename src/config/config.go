@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	pb_struct "github.com/envoyproxy/go-control-plane/envoy/extensions/common/ratelimit/v3"
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v3"
 	"golang.org/x/net/context"
@@ -63,6 +65,10 @@ type RateLimitConfigToLoad struct {
 type RateLimitDiff struct {
 	Root YamlRoot
 	Type DiffType
+}
+
+func (rld *RateLimitDiff) String() string {
+	return fmt.Sprintf("{Root:%v, Type:%v}", rld.Root, rld.Type)
 }
 
 type YamlReplaces struct {

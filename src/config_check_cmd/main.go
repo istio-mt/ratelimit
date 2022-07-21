@@ -49,7 +49,7 @@ func main() {
 			fmt.Printf("error reading file %s: %s\n", finalPath, err.Error())
 			os.Exit(1)
 		}
-		allConfigs = append(allConfigs, config.RateLimitConfigToLoad{finalPath, string(bytes)})
+		allConfigs = append(allConfigs, config.RateLimitConfigToLoad{Name: finalPath, FileBytes: string(bytes), Diff: nil})
 	}
 
 	loadConfigs(allConfigs)

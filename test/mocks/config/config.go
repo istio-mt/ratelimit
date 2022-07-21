@@ -102,3 +102,17 @@ func (mr *MockRateLimitConfigLoaderMockRecorder) Load(arg0, arg1 interface{}) *g
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockRateLimitConfigLoader)(nil).Load), arg0, arg1)
 }
+
+// LoadDiff mocks base method
+func (m *MockRateLimitConfigLoader) LoadDiff(arg0 []config.RateLimitConfigToLoad, arg1 stats.Manager) config.RateLimitConfig {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadDiff", arg0, arg1)
+	ret0, _ := ret[0].(config.RateLimitConfig)
+	return ret0
+}
+
+// LoadDiff indicates an expected call of LoadDiff
+func (mr *MockRateLimitConfigLoaderMockRecorder) LoadDiff(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadDiff", reflect.TypeOf((*MockRateLimitConfigLoader)(nil).LoadDiff), arg0, arg1)
+}
