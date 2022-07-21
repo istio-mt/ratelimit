@@ -363,9 +363,8 @@ func NewService(runtime loader.IFace, cache limiter.RateLimitCache,
 		customHeaderClock:  clock,
 	}
 
-	runtime.AddUpdateCallback(newService.runtimeUpdateEvent)
-
 	if msgCh == nil {
+		runtime.AddUpdateCallback(newService.runtimeUpdateEvent)
 		newService.reloadConfig(statsManager)
 		go func() {
 			// No exit right now.

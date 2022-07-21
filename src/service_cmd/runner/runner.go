@@ -111,7 +111,7 @@ func (runner *Runner) Run(msgCh <-chan config.RateLimitMessage) {
 
 	serverReporter := metrics.NewServerReporter(runner.statsManager.GetStatsStore().ScopeWithTags("ratelimit_server", s.ExtraTags))
 
-	srv := server.NewServer(s, "ratelimit", runner.statsManager, localCache, settings.GrpcUnaryInterceptor(serverReporter.UnaryServerInterceptor()))
+	srv := server.NewServer(s, "ratelimit", msgCh==nil, runner.statsManager, localCache, settings.GrpcUnaryInterceptor(serverReporter.UnaryServerInterceptor()))
 	runner.mu.Lock()
 	runner.srv = srv
 	runner.mu.Unlock()

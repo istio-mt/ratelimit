@@ -47,14 +47,6 @@ const (
 	RemoveType DiffType = "remove"
 	ModifyType DiffType = "modify"
 )
-
-// Information for a config file to load into the aggregate config.
-type RateLimitConfigToLoad struct {
-	Name      string
-	FileBytes string
-	Diff      *RateLimitDiff
-}
-
 // Message to apply diff configs to the  aggregate config.
 type RateLimitMessage struct {
 	NumPods             uint32
@@ -62,7 +54,12 @@ type RateLimitMessage struct {
 	InMemoryThreshold   uint32
 	Configs             []RateLimitConfigToLoad
 }
-
+// Information for a config file to load into the aggregate config.
+type RateLimitConfigToLoad struct {
+	Name      string
+	FileBytes string
+	Diff      *RateLimitDiff
+}
 type RateLimitDiff struct {
 	Root YamlRoot
 	Type DiffType

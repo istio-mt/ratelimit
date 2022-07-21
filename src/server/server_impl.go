@@ -188,11 +188,11 @@ func (server *server) Runtime() loader.IFace {
 	return server.runtime
 }
 
-func NewServer(s settings.Settings, name string, statsManager stats.Manager, localCache *freecache.Cache, opts ...settings.Option) Server {
-	return newServer(s, name, statsManager, localCache, opts...)
+func NewServer(s settings.Settings, name string, enableRuntime bool, statsManager stats.Manager, localCache *freecache.Cache, opts ...settings.Option) Server {
+	return newServer(s, name, enableRuntime, statsManager, localCache, opts...)
 }
 
-func newServer(s settings.Settings, name string, statsManager stats.Manager, localCache *freecache.Cache, opts ...settings.Option) *server {
+func newServer(s settings.Settings, name string, enableRuntime bool, statsManager stats.Manager, localCache *freecache.Cache, opts ...settings.Option) *server {
 	for _, opt := range opts {
 		opt(&s)
 	}
@@ -234,28 +234,30 @@ func newServer(s settings.Settings, name string, statsManager stats.Manager, loc
 		ret.store.AddStatGenerator(limiter.NewLocalCacheStats(localCache, ret.scope.Scope("localcache")))
 	}
 
-	// setup runtime
-	loaderOpts := make([]loader.Option, 0, 1)
-	if s.RuntimeIgnoreDotFiles {
-		loaderOpts = append(loaderOpts, loader.IgnoreDotFiles)
-	} else {
-		loaderOpts = append(loaderOpts, loader.AllowDotFiles)
-	}
+	if enableRuntime {
+		// setup runtime
+		loaderOpts := make([]loader.Option, 0, 1)
+		if s.RuntimeIgnoreDotFiles {
+			loaderOpts = append(loaderOpts, loader.IgnoreDotFiles)
+		} else {
+			loaderOpts = append(loaderOpts, loader.AllowDotFiles)
+		}
 
-	if s.RuntimeWatchRoot {
-		ret.runtime = loader.New(
-			s.RuntimePath,
-			s.RuntimeSubdirectory,
-			ret.store.ScopeWithTags("runtime", s.ExtraTags),
-			&loader.SymlinkRefresher{RuntimePath: s.RuntimePath},
-			loaderOpts...)
-	} else {
-		ret.runtime = loader.New(
-			filepath.Join(s.RuntimePath, s.RuntimeSubdirectory),
-			"config",
-			ret.store.ScopeWithTags("runtime", s.ExtraTags),
-			&loader.DirectoryRefresher{},
-			loaderOpts...)
+		if s.RuntimeWatchRoot {
+			ret.runtime = loader.New(
+				s.RuntimePath,
+				s.RuntimeSubdirectory,
+				ret.store.ScopeWithTags("runtime", s.ExtraTags),
+				&loader.SymlinkRefresher{RuntimePath: s.RuntimePath},
+				loaderOpts...)
+		} else {
+			ret.runtime = loader.New(
+				filepath.Join(s.RuntimePath, s.RuntimeSubdirectory),
+				"config",
+				ret.store.ScopeWithTags("runtime", s.ExtraTags),
+				&loader.DirectoryRefresher{},
+				loaderOpts...)
+		}
 	}
 
 	// setup http router
