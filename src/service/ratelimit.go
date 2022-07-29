@@ -108,11 +108,12 @@ func (this *service) applyConfig(msg config.RateLimitMessage, statsManager stats
 		}
 	}()
 
+	this.configLock.Lock()
+	// loadDiff reuse the existed config
 	// TODO: handle changing of pods and threshold
 	newConfig := this.configLoader.LoadDiff(msg.Configs, statsManager)
 	this.stats.ConfigLoadSuccess.Inc()
 
-	this.configLock.Lock()
 	this.config = newConfig
 	// FIXME: is it necessary?
 	rlSettings := settings.NewSettings()
