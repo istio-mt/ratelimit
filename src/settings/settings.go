@@ -80,6 +80,7 @@ type Settings struct {
 	RedisUrl        string `envconfig:"REDIS_URL" default:"/var/run/nutcracker/ratelimit.sock"`
 	RedisPoolSize   int    `envconfig:"REDIS_POOL_SIZE" default:"10"`
 	RedisAuth       string `envconfig:"REDIS_AUTH" default:""`
+	RedisDB         int    `envconfig:"REDIS_DB" default:"0"`
 	RedisTls        bool   `envconfig:"REDIS_TLS" default:"false"`
 	// TODO: Make this setting configurable out of the box instead of having to provide it through code.
 	RedisTlsConfig *tls.Config
@@ -101,6 +102,7 @@ type Settings struct {
 	RedisPerSecondUrl        string `envconfig:"REDIS_PERSECOND_URL" default:"/var/run/nutcracker/ratelimitpersecond.sock"`
 	RedisPerSecondPoolSize   int    `envconfig:"REDIS_PERSECOND_POOL_SIZE" default:"10"`
 	RedisPerSecondAuth       string `envconfig:"REDIS_PERSECOND_AUTH" default:""`
+	RedisPerSecondDB         int    `envconfig:"REDIS_PERSECOND_DB" default:"0"`
 	RedisPerSecondTls        bool   `envconfig:"REDIS_PERSECOND_TLS" default:"false"`
 	// RedisPerSecondPipelineWindow sets the duration after which internal pipelines will be flushed for per second redis.
 	// See comments of RedisPipelineWindow for details.
