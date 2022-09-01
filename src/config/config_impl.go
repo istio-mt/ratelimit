@@ -13,29 +13,29 @@ import (
 	"github.com/envoyproxy/ratelimit/src/stats"
 )
 
-type yamlReplaces struct {
+type YamlReplaces struct {
 	Name string
 }
 
-type yamlRateLimit struct {
+type YamlRateLimit struct {
 	RequestsPerUnit uint32 `yaml:"requests_per_unit"`
 	Unit            string
 	Unlimited       bool `yaml:"unlimited"`
 	Name            string
-	Replaces        []yamlReplaces
+	Replaces        []YamlReplaces
 }
 
-type yamlDescriptor struct {
+type YamlDescriptor struct {
 	Key         string
 	Value       string
-	RateLimit   *yamlRateLimit `yaml:"rate_limit"`
-	Descriptors []yamlDescriptor
+	RateLimit   *YamlRateLimit `yaml:"rate_limit"`
+	Descriptors []YamlDescriptor
 	ShadowMode  bool `yaml:"shadow_mode"`
 }
 
-type yamlRoot struct {
+type YamlRoot struct {
 	Domain      string
-	Descriptors []yamlDescriptor
+	Descriptors []YamlDescriptor
 }
 
 type rateLimitDescriptor struct {
@@ -115,7 +115,7 @@ func newRateLimitConfigError(config RateLimitConfigToLoad, err string) RateLimit
 // @param parentKey supplies the fully resolved key name that owns this config level.
 // @param descriptors supplies the YAML descriptors to load.
 // @param statsManager that owns the stats.Scope.
-func (this *rateLimitDescriptor) loadDescriptors(config RateLimitConfigToLoad, parentKey string, descriptors []yamlDescriptor, statsManager stats.Manager) {
+func (this *rateLimitDescriptor) loadDescriptors(config RateLimitConfigToLoad, parentKey string, descriptors []YamlDescriptor, statsManager stats.Manager) {
 	for _, descriptorConfig := range descriptors {
 		if descriptorConfig.Key == "" {
 			panic(newRateLimitConfigError(config, "descriptor has empty key"))
@@ -244,7 +244,7 @@ func (this *rateLimitConfigImpl) loadConfig(config RateLimitConfigToLoad) {
 	}
 	validateYamlKeys(config, any)
 
-	var root yamlRoot
+	var root YamlRoot
 	err = yaml.Unmarshal([]byte(config.FileBytes), &root)
 	if err != nil {
 		errorText := fmt.Sprintf("error loading config file: %s", err.Error())

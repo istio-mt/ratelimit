@@ -140,7 +140,7 @@ func NewBaseRateLimit(timeSource utils.TimeSource, jitterRand *rand.Rand, expira
 		timeSource:                 timeSource,
 		JitterRand:                 jitterRand,
 		ExpirationJitterMaxSeconds: expirationJitterMaxSeconds,
-		cacheKeyGenerator:          NewCacheKeyGenerator(cacheKeyPrefix),
+		cacheKeyGenerator:          NewHashCacheKeyGenerator(cacheKeyPrefix, FarmHash),
 		localCache:                 localCache,
 		nearLimitRatio:             nearLimitRatio,
 		StatsManager:               statsManager,
