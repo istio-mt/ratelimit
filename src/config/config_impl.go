@@ -14,28 +14,28 @@ import (
 )
 
 type YamlReplaces struct {
-	Name string
+	Name string `yaml:"name,omitempty"`
 }
 
 type YamlRateLimit struct {
-	RequestsPerUnit uint32 `yaml:"requests_per_unit"`
-	Unit            string
-	Unlimited       bool `yaml:"unlimited"`
-	Name            string
-	Replaces        []YamlReplaces
+	RequestsPerUnit uint32         `yaml:"requests_per_unit"`
+	Unit            string         `yaml:"unit"`
+	Unlimited       bool           `yaml:"unlimited"`
+	Name            string         `yaml:"name,omitempty"`
+	Replaces        []YamlReplaces `yaml:"replaces,omitempty"`
 }
 
 type YamlDescriptor struct {
-	Key         string
-	Value       string
-	RateLimit   *YamlRateLimit `yaml:"rate_limit"`
-	Descriptors []YamlDescriptor
-	ShadowMode  bool `yaml:"shadow_mode"`
+	Key         string           `yaml:"key"`
+	Value       string           `yaml:"value,omitempty"`
+	RateLimit   *YamlRateLimit   `yaml:"rate_limit,omitempty"`
+	Descriptors []YamlDescriptor `yaml:"descriptors,omitempty"`
+	ShadowMode  bool             `yaml:"shadow_mode,omitempty"`
 }
 
 type YamlRoot struct {
-	Domain      string
-	Descriptors []YamlDescriptor
+	Domain      string           `yaml:"domain"`
+	Descriptors []YamlDescriptor `yaml:"descriptors,omitempty"`
 }
 
 type rateLimitDescriptor struct {
