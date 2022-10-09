@@ -6,6 +6,8 @@ import (
 )
 
 func main() {
-	runner := runner.NewRunner(settings.NewSettings())
+	s := settings.NewSettings()
+	settings.TracingEnabled = s.TracingEnabled
+	runner := runner.NewRunner(s)
 	runner.Run()
 }

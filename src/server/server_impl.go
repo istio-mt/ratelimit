@@ -99,13 +99,15 @@ func NewJsonHandler(svc pb.RateLimitServiceServer) func(http.ResponseWriter, *ht
 			return
 		}
 
-		// Generate trace
-		_, span := tracer.Start(ctx, "NewJsonHandler Remaining Execution",
-			trace.WithAttributes(
-				attribute.String("response", resp.String()),
-			),
-		)
-		defer span.End()
+		if settings.TracingEnabled {
+			// Generate trace
+			_, span := tracer.Start(ctx, "NewJsonHandler Remaining Execution",
+				trace.WithAttributes(
+					attribute.String("response", resp.String()),
+				),
+			)
+			defer span.End()
+		}
 
 		logger.Debugf("resp:%s", resp)
 

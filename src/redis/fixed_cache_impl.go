@@ -16,6 +16,7 @@ import (
 
 	"github.com/envoyproxy/ratelimit/src/config"
 	"github.com/envoyproxy/ratelimit/src/limiter"
+	"github.com/envoyproxy/ratelimit/src/settings"
 	"github.com/envoyproxy/ratelimit/src/utils"
 )
 
@@ -93,14 +94,16 @@ func (this *fixedRateLimitCacheImpl) DoLimit(
 		}
 	}
 
-	// Generate trace
-	_, span := tracer.Start(ctx, "Redis Pipeline Execution",
-		trace.WithAttributes(
-			attribute.Int("pipeline length", len(pipeline)),
-			attribute.Int("perSecondPipeline length", len(perSecondPipeline)),
-		),
-	)
-	defer span.End()
+	if settings.TracingEnabled {
+		// Generate trace
+		_, span := tracer.Start(ctx, "Redis Pipeline Execution",
+			trace.WithAttributes(
+				attribute.Int("pipeline length", len(pipeline)),
+				attribute.Int("perSecondPipeline length", len(perSecondPipeline)),
+			),
+		)
+		defer span.End()
+	}
 
 	if pipeline != nil {
 		checkError(this.client.PipeDo(pipeline))

@@ -10,6 +10,7 @@ import (
 	"github.com/envoyproxy/ratelimit/src/utils"
 )
 
+var TracingEnabled bool 
 type Settings struct {
 	// runtime options
 	// This value shall be imported into unary server interceptor in order to enable chaining
