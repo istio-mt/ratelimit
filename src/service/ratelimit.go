@@ -267,14 +267,16 @@ func (this *service) ShouldRateLimit(
 	ctx context.Context,
 	request *pb.RateLimitRequest) (finalResponse *pb.RateLimitResponse, finalError error) {
 
-	// Generate trace
-	_, span := tracer.Start(ctx, "ShouldRateLimit Execution",
-		trace.WithAttributes(
-			attribute.String("domain", request.Domain),
-			attribute.String("request string", request.String()),
-		),
-	)
-	defer span.End()
+	if settings.TracingEnabled {
+		// Generate trace
+		_, span := tracer.Start(ctx, "ShouldRateLimit Execution",
+			trace.WithAttributes(
+				attribute.String("domain", request.Domain),
+				attribute.String("request string", request.String()),
+			),
+		)
+		defer span.End()
+	}
 
 	defer func() {
 		err := recover()
